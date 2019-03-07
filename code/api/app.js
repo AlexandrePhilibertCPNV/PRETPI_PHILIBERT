@@ -1,4 +1,5 @@
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const Router = require('router');
 const querystring = require('querystring');
@@ -37,4 +38,15 @@ http.createServer((req, res) => {
 	router(req, res, () => {
 		
 	});
-}).listen(80); 
+}).listen(80);
+
+const options = {
+	key: fs.readFileSync('/etc/letsencrypt/live/runscape.internet-box.ch/privkey.pem'),
+	cert : fs.readFileSync('/etc/letsencrypt/live/runscape.internet-box.ch/cert.pem')
+}
+
+https.createServer(options, (req, res) => {
+	router(req, res, () => {
+		
+	});
+}).listen(443);
