@@ -2,7 +2,7 @@ const uuidv4 = require('uuid/v4');
 const validator = require('validator');
 
 const DatabaseManager = require('../db/databaseManager.js');
-const {MysqlError} = require('../classes/error.js');
+const {MysqlError, InvalidFormatError} = require('../classes/error.js');
 const dbConfig = require('../config/dbConfig.js');
 
 let FIELD_ALLOWED_MODIFICATION = [
@@ -38,7 +38,11 @@ module.exports = {
 		});
 		
 		if(!validator.isEmail(params.email)) {
-			throw new Error('Email format invalid');
+			callback(new InvalidFormatError('Email format invalid'));
+		}
+		
+		if(params.password.length < 8) {
+			callback(new InvalidFormatError('Password too short'));
 		}
 		
 		let id = uuidv4();
@@ -57,7 +61,7 @@ module.exports = {
 			}
 		}
 		
-		connection.query("INSERT INTO tabl_user SET ?", values, (err, result) => {
+		connection.query("INSERT INTO tbl_user SET ?", values, (err, result) => {
 			if(err) {
 				callback(new MysqlError(err))
 				return;
@@ -85,30 +89,22 @@ module.exports = {
 			}
 		});
 		
-		var query = 'UPDATE tbl_user SET ';
+		let values = params;
 		for(let key in params) {
 			//if the field isn't allowed modification
 			if(!FIELD_ALLOWED_MODIFICATION.includes(key)) {
-				continue;
-			}
-			query += key + "=";
-			if(typeof params[key] === 'number' || typeof params[key] === 'boolean') {
-				query += params[key] + ",";
-			} else if(typeof params[key] === 'string') {
-				query += "'" + params[key] + "',";
-			} else {
-				throw new Error('unsupported parameter type for: ' + key);
+				delete values[key];
 			}
 		}
-		//remove the last ","
-		query = query.substr(0, query.length-1);
-		query += " WHERE id='" + id + "'";
-
-		connection.query(query, (err, result) => {
+		
+		let test = dbManager.format("UPDATE tbl_user SET ? WHERE id=?",[values, id]);
+		console.log(test);
+		
+		connection.query("UPDATE tbl_user SET ? WHERE id=?",[values, id], (err, result) => {
 			if(err) {
-				throw err;
+				throw new MysqlError(err);
 			}
-			return result;
+			console.log("working");
 		});
 	}
 }

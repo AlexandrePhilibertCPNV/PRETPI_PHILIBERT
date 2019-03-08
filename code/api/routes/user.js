@@ -3,7 +3,7 @@ const Router = require('router');
 const uuidv4 = require('uuid/v4');
 
 const DatabaseManager = require('../db/databaseManager.js');
-const {MysqlError} = require('../classes/error.js');
+const {MysqlError, InvalidFormatError} = require('../classes/error.js');
 const userActions = require('../actions/user.js');
 const tokenActions = require('../actions/token.js');
 const dbConfig = require('../config/dbConfig.js');
@@ -64,7 +64,10 @@ class UserController {
 					if(err) {
 						if(err instanceof MysqlError) {
 							res.statusCode = 500;
-							res.end("Database Error");
+							res.end('Database error');
+						} else if (err instanceof InvalidFormatError) {
+							res.statusCode = 400;
+							res.end(err.message);
 						} else {
 							res.statusCode = 500;
 							res.end("Server error");
@@ -93,7 +96,7 @@ class UserController {
 			
 			connection.query("select * from tbl_user where id ='" + req.params.id + "' LIMIT 1", (err, result) => {
 				if(err) {
-					throw new Error();
+					throw new MysqlError(err);
 				}
 				
 				if(!tokenActions.validateJWT(token, result[0])) {
