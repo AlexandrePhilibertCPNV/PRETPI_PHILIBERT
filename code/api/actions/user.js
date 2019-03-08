@@ -1,6 +1,8 @@
-const DatabaseManager = require('../db/databaseManager.js');
 const uuidv4 = require('uuid/v4');
+const validator = require('validator');
 
+const DatabaseManager = require('../db/databaseManager.js');
+const {MysqlError} = require('../classes/error.js');
 const dbConfig = require('../config/dbConfig.js');
 
 let FIELD_ALLOWED_MODIFICATION = [
@@ -12,7 +14,11 @@ let FIELD_ALLOWED_MODIFICATION = [
 
 module.exports = {
 	
-	create: function(params) {
+	/*
+	 *	@params		contains the user informations
+	 *	@callback	returns the user id when the user was inserted in db
+	*/
+	create: function(params, callback) {
 		
 		let dbManager = new DatabaseManager();	
 		
@@ -27,23 +33,37 @@ module.exports = {
 		
 		connection.connect((err) => {
 			if(err) {
-				throw err;
+				throw new MysqlError(err);
 			}
 		});
 		
-		connection.query("INSERT INTO tbl_user (id, firstname, lastname, password, email, phonenumber) VALUES ('" + 
-			uuidv4() + "','" +
-			params.firstname + "','" + 
-			params.lastname + "','" + 
-			params.password + "','" + 
-			params.email + "','" + 
-			params.phonenumber + "');", (err, result) => {
-				if(err) {
-					throw err;
-				}
-				return result;
+		if(!validator.isEmail(params.email)) {
+			throw new Error('Email format invalid');
+		}
+		
+		let id = uuidv4();
+		let values = {
+			'id': id,
+			'firstname': params.firstname,
+			'lastname': params.lastname,
+			'password': params.password,
+			'email': params.email,
+			'phonenumber': params.phonenumber
+		};
+		
+		for(let value in values) {
+			if(typeof values[value] === 'undefined') {
+				throw new Error('Missing value');
 			}
-		);
+		}
+		
+		connection.query("INSERT INTO tabl_user SET ?", values, (err, result) => {
+			if(err) {
+				callback(new MysqlError(err))
+				return;
+			}
+			callback(err, id);
+		});
 	},
 	
 	update: function(id, params) {
@@ -52,8 +72,8 @@ module.exports = {
 		
 		let connection = dbManager.createConnection({
 			host: 'localhost',
-			user: 'alexandre',
-			password: 'X6dwLaoRY?',
+			user: dbConfig.user,
+			password: dbConfig.password,
 			port: 3306,
 			insecureAuth: true,
 			database: 'runscape'
@@ -61,7 +81,7 @@ module.exports = {
 		
 		connection.connect((err) => {
 			if(err) {
-				throw err;
+				throw new MysqlError(err);
 			}
 		});
 		

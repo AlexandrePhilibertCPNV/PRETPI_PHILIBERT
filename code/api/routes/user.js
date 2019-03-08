@@ -1,12 +1,12 @@
 const querystring = require('querystring');
-
 const Router = require('router');
 const uuidv4 = require('uuid/v4');
-const DatabaseManager = require('../db/databaseManager.js');
 
+const DatabaseManager = require('../db/databaseManager.js');
+const {MysqlError} = require('../classes/error.js');
 const userActions = require('../actions/user.js');
 const tokenActions = require('../actions/token.js');
-const dbConfig = require('')
+const dbConfig = require('../config/dbConfig.js');
 
 class UserController {
 	constructor(req, res) {
@@ -15,8 +15,8 @@ class UserController {
 		let dbManager = new DatabaseManager();	
 		let connection = dbManager.createConnection({
 			host: 'localhost',
-			user: 'alexandre',
-			password: 'X6dwLaoRY?',
+			user: dbConfig.user,
+			password: dbConfig.password,
 			port: 3306,
 			insecureAuth: true,
 			database: 'runscape'
@@ -30,7 +30,6 @@ class UserController {
 		
 		router.get('/user', (req, res) => {
 			connection.query("select * from tbl_user", (err, result) => {
-				console.log(err);
 				res.statusCode = 200;
 				res.setHeader('Content-Type', 'application/json');
 				res.end(JSON.stringify(result));
@@ -38,7 +37,7 @@ class UserController {
 		});
 		
 		router.get('/user/:id', (req, res) => {
-			connection.query("select * from tbl_user where id ='" + req.params.id + "' LIMIT 1", (err, result) => {
+			connection.query("SELECT * from tbl_user where id ='" + req.params.id + "' LIMIT 1", (err, result) => {
 				if(err) {
 					throw err;	
 				}
@@ -52,12 +51,28 @@ class UserController {
 			let body = '';
 			req.on('data', (data) => {
 				body += data.toString();
-				// don't forget to limit data max size
+				
+				//~ 2Mb 
+				if (body.length > 2e6) {
+					req.connection.destroy();
+				}
 			});
 			
 			req.on('end', () => {
 				let post = JSON.parse(body);
-				userActions.create(post);
+				userActions.create(post, (err, id) => {
+					if(err) {
+						if(err instanceof MysqlError) {
+							res.statusCode = 500;
+							res.end("Database Error");
+						} else {
+							res.statusCode = 500;
+							res.end("Server error");
+						}
+					}
+					res.statusCode = 200;
+					res.end("user successfully created : " + id);
+				});
 			});
 		});
 		
@@ -78,7 +93,7 @@ class UserController {
 			
 			connection.query("select * from tbl_user where id ='" + req.params.id + "' LIMIT 1", (err, result) => {
 				if(err) {
-					throw err;	
+					throw new Error();
 				}
 				
 				if(!tokenActions.validateJWT(token, result[0])) {

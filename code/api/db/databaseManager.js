@@ -6,6 +6,10 @@ class DatabaseManager {
 		
 	}
 	
+	format(query, parameters) {
+		return mysql.format(query, parameters)
+	}
+	
 	createConnection(database) {
 		return mysql.createConnection(database);
 	}
