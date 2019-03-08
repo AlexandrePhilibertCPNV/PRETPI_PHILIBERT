@@ -57,7 +57,7 @@ module.exports = {
 		
 		for(let value in values) {
 			if(typeof values[value] === 'undefined') {
-				throw new Error('Missing value');
+				callback(new InvalidFormatError('Missing value in request body'));
 			}
 		}
 		
