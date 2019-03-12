@@ -15,4 +15,10 @@ class InvalidFormatError extends Error {
 	}
 }
 
-module.exports = {MysqlError, UnauthorizedError, InvalidFormatError};
+class MissingFieldError extends Error {
+	constructor(message) {
+		super(message);
+	}
+}
+
+module.exports = {MysqlError, UnauthorizedError, InvalidFormatError, MissingFieldError};

@@ -2,6 +2,7 @@ const Router = require('router');
 
 const DatabaseManager = require('../db/databaseManager.js');
 const dbConfig = require('../config/dbConfig.js')
+const {MissingFieldError} = require('../classes/error.js');
 
 const tokenActions = require('../actions/token.js');
 
@@ -39,12 +40,23 @@ class TokenController {
 					console.error(err);
 				}
 				if(typeof post.email === 'undefined' || typeof post.password === 'undefined') {
-					console.log("email or password not defined");
-					throw new Error('email or password not defined');
+					res.statusCode = 401;
+					res.end('missing email or password in request');
 				}
-				let userId = connection.query('SELECT id FROM tbl_user WHERE password = "' + post.password + '" LIMIT 1', (err, result) => {
+				let emailCondition = {
+					email: post.email
+				};
+				let passwordCondition = {
+					password: post.password
+				};
+				connection.query('SELECT id FROM tbl_user WHERE ? AND ? LIMIT 1', [emailCondition, passwordCondition] ,(err, result) => {
 					if(err) {
 						throw err;
+					}
+					if(result.length === 0) {
+						res.statusCode = 403;
+						res.end('Login informations incorrect');
+						return;
 					}
 					let token = tokenActions.createJWT(result[0]);
 					res.statusCode = 200;

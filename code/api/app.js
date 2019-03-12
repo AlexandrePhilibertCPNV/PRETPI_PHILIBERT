@@ -3,8 +3,8 @@ const https = require('https');
 const fs = require('fs');
 const Router = require('router');
 const querystring = require('querystring');
-
 const mysql = require('mysql');
+
 const dbConfig = require('./config/dbConfig.js');
 
 var router = new Router();
@@ -40,11 +40,12 @@ http.createServer((req, res) => {
 	});
 }).listen(80);
 
-let options;
+let options = {};
 try {
-	options.key = fs.readFileSync('/etc/letsencrypt/live/runsacape.internet-box.ch/privkey.pem');
+	options.key = fs.readFileSync('/etc/letsencrypt/live/runscape.internet-box.ch/privkey.pem');
 	options.cert = fs.readFileSync('/etc/letsencrypt/live/runscape.internet-box.ch/cert.pem');
 } catch(err) {
+	console.log(err)
 	console.log("Could not find SSL certificate files, server running under HTTP only");
 }
 

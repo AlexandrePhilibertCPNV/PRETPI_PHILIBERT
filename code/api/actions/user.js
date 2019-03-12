@@ -97,9 +97,6 @@ module.exports = {
 			}
 		}
 		
-		let test = dbManager.format("UPDATE tbl_user SET ? WHERE id=?",[values, id]);
-		console.log(test);
-		
 		connection.query("UPDATE tbl_user SET ? WHERE id=?",[values, id], (err, result) => {
 			if(err) {
 				throw new MysqlError(err);
