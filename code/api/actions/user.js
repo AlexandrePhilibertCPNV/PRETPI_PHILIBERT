@@ -1,6 +1,8 @@
-const DatabaseManager = require('../db/databaseManager.js');
 const uuidv4 = require('uuid/v4');
+const validator = require('validator');
 
+const DatabaseManager = require('../db/databaseManager.js');
+const {MysqlError, InvalidFormatError} = require('../classes/error.js');
 const dbConfig = require('../config/dbConfig.js');
 
 let FIELD_ALLOWED_MODIFICATION = [
@@ -12,7 +14,11 @@ let FIELD_ALLOWED_MODIFICATION = [
 
 module.exports = {
 	
-	create: function(params) {
+	/*
+	 *	@params		contains the user informations
+	 *	@callback	returns the user id when the user was inserted in db
+	*/
+	create: function(params, callback) {
 		
 		let dbManager = new DatabaseManager();	
 		
@@ -27,23 +33,41 @@ module.exports = {
 		
 		connection.connect((err) => {
 			if(err) {
-				throw err;
+				throw new MysqlError(err);
 			}
 		});
 		
-		connection.query("INSERT INTO tbl_user (id, firstname, lastname, password, email, phonenumber) VALUES ('" + 
-			uuidv4() + "','" +
-			params.firstname + "','" + 
-			params.lastname + "','" + 
-			params.password + "','" + 
-			params.email + "','" + 
-			params.phonenumber + "');", (err, result) => {
-				if(err) {
-					throw err;
-				}
-				return result;
+		if(!validator.isEmail(params.email)) {
+			callback(new InvalidFormatError('Email format invalid'));
+		}
+		
+		if(params.password.length < 8) {
+			callback(new InvalidFormatError('Password too short'));
+		}
+		
+		let id = uuidv4();
+		let values = {
+			'id': id,
+			'firstname': params.firstname,
+			'lastname': params.lastname,
+			'password': params.password,
+			'email': params.email,
+			'phonenumber': params.phonenumber
+		};
+		
+		for(let value in values) {
+			if(typeof values[value] === 'undefined') {
+				callback(new InvalidFormatError('Missing value in request body'));
 			}
-		);
+		}
+		
+		connection.query("INSERT INTO tbl_user SET ?", values, (err, result) => {
+			if(err) {
+				callback(new MysqlError(err))
+				return;
+			}
+			callback(err, id);
+		});
 	},
 	
 	update: function(id, params) {
@@ -52,8 +76,8 @@ module.exports = {
 		
 		let connection = dbManager.createConnection({
 			host: 'localhost',
-			user: 'alexandre',
-			password: 'X6dwLaoRY?',
+			user: dbConfig.user,
+			password: dbConfig.password,
 			port: 3306,
 			insecureAuth: true,
 			database: 'runscape'
@@ -61,34 +85,26 @@ module.exports = {
 		
 		connection.connect((err) => {
 			if(err) {
-				throw err;
+				throw new MysqlError(err);
 			}
 		});
 		
-		var query = 'UPDATE tbl_user SET ';
+		let values = params;
 		for(let key in params) {
 			//if the field isn't allowed modification
 			if(!FIELD_ALLOWED_MODIFICATION.includes(key)) {
-				continue;
-			}
-			query += key + "=";
-			if(typeof params[key] === 'number' || typeof params[key] === 'boolean') {
-				query += params[key] + ",";
-			} else if(typeof params[key] === 'string') {
-				query += "'" + params[key] + "',";
-			} else {
-				throw new Error('unsupported parameter type for: ' + key);
+				delete values[key];
 			}
 		}
-		//remove the last ","
-		query = query.substr(0, query.length-1);
-		query += " WHERE id='" + id + "'";
-
-		connection.query(query, (err, result) => {
+		
+		let test = dbManager.format("UPDATE tbl_user SET ? WHERE id=?",[values, id]);
+		console.log(test);
+		
+		connection.query("UPDATE tbl_user SET ? WHERE id=?",[values, id], (err, result) => {
 			if(err) {
-				throw err;
+				throw new MysqlError(err);
 			}
-			return result;
+			console.log("working");
 		});
 	}
 }
