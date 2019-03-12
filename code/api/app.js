@@ -40,9 +40,12 @@ http.createServer((req, res) => {
 	});
 }).listen(80);
 
-const options = {
-	key: fs.readFileSync('/etc/letsencrypt/live/runscape.internet-box.ch/privkey.pem'),
-	cert : fs.readFileSync('/etc/letsencrypt/live/runscape.internet-box.ch/cert.pem')
+let options;
+try {
+	options.key = fs.readFileSync('/etc/letsencrypt/live/runsacape.internet-box.ch/privkey.pem');
+	options.cert = fs.readFileSync('/etc/letsencrypt/live/runscape.internet-box.ch/cert.pem');
+} catch(err) {
+	console.log("Could not find SSL certificate files, server running under HTTP only");
 }
 
 https.createServer(options, (req, res) => {
