@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS `runscape`.`tbl_activity` (
   `fk_user` VARCHAR(36) NOT NULL,
   `start_timestamp` TIMESTAMP NULL,
   `end_timestamp` TIMESTAMP NULL,
+  `gpx` TEXT NULL,
   `removed` TINYINT(1) NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   INDEX `fk_tbl_activity_tbl_user1_idx` (`fk_user` ASC),
