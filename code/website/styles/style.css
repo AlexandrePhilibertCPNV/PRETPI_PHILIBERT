@@ -1,0 +1,43 @@
+* {
+	margin: 0;
+	box-sizing: border-box;
+}
+
+.loginContainer {
+	margin-top: 20vh;
+	margin-bottom: 10vh;
+	margin-left: 40vw;
+	margin-right: 40vw;
+	text-align: center;
+	border: 1px solid #629ada;
+	border-radius: 20px;
+	box-shadow: 5px 5px 5px 0px rgba(35, 91, 146, 0.75);
+	
+	min-height: 450px;
+}
+
+.logo {
+	max-width: 150px;
+}
+
+.loginFormContainer {
+	width: 100%;
+}
+
+form {
+	max-width: 200px;
+	display: inline-block;
+	margin-top: 20px;
+	margin-bottom: 20px;
+}
+
+input {
+	width: 100%;
+	padding: 8px;
+	margin-top: 5px;
+	margin-bottom: 5px;
+}
+
+input[type="submit"] {
+	margin-top: 40px;
+}
