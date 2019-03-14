@@ -2,11 +2,12 @@ const querystring = require('querystring');
 const Router = require('router');
 const uuidv4 = require('uuid/v4');
 
-const DatabaseManager = require('../db/databaseManager.js');
+const DatabaseManager = require('../classes/databaseManager.js');
 const {MysqlError, InvalidFormatError} = require('../classes/error.js');
 const userActions = require('../actions/user.js');
 const tokenActions = require('../actions/token.js');
 const dbConfig = require('../config/dbConfig.js');
+const activityActions = require('../actions/activity.js');
 
 class UserController {
 	constructor(req, res) {
@@ -28,7 +29,7 @@ class UserController {
 			}
 		});
 		
-		router.get('/user', (req, res) => {
+		router.get('/api/user', (req, res) => {
 			connection.query("select * from tbl_user", (err, result) => {
 				res.statusCode = 200;
 				res.setHeader('Content-Type', 'application/json');
@@ -36,7 +37,7 @@ class UserController {
 			});
 		});
 		
-		router.get('/user/:id', (req, res) => {
+		router.get('/api/user/:id', (req, res) => {
 			connection.query("SELECT * from tbl_user where id ='" + req.params.id + "' LIMIT 1", (err, result) => {
 				if(err) {
 					throw err;	
@@ -47,7 +48,7 @@ class UserController {
 			});
 		});
 			
-		router.post('/user', (req, res) => {
+		router.post('/api/user', (req, res) => {
 			let body = '';
 			req.on('data', (data) => {
 				body += data.toString();
@@ -79,7 +80,29 @@ class UserController {
 			});
 		});
 		
-		router.put('/user/:id', (req, res) => {
+		router.post('/api/user/:id/activity', (req, res) => {
+			let params = {
+				userId: req.params.id
+			};
+			
+			let body = '';
+			req.on('data', (data) => {
+				body += data.toString();
+				// don't forget to limit data max size
+			});
+			
+			req.on('end', () => {
+				let post = JSON.parse(body);
+				Object.assign(params, post);
+			
+				activityActions.create(params, (activityId) => {
+					res.statusCode = 200;
+					res.end(JSON.stringify(activityId));
+				});
+			});
+		});
+		
+		router.put('/api/user/:id', (req, res) => {
 			
 			let authorization = req.headers['authorization'];
 			if(typeof authorization === 'undefined') {

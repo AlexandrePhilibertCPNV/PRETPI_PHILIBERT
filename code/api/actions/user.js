@@ -1,11 +1,11 @@
 const uuidv4 = require('uuid/v4');
 const validator = require('validator');
 
-const DatabaseManager = require('../db/databaseManager.js');
+const DatabaseManager = require('../classes/databaseManager.js');
 const {MysqlError, InvalidFormatError} = require('../classes/error.js');
 const dbConfig = require('../config/dbConfig.js');
 
-let FIELD_ALLOWED_MODIFICATION = [
+const FIELD_ALLOWED_MODIFICATION = [
 	'firstname',
 	'lastname',
 	'password',

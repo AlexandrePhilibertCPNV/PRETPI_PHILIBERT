@@ -9,7 +9,7 @@ const dbConfig = require('./config/dbConfig.js');
 
 var router = new Router();
 
-router.all('/token*', (req, res) => {
+router.all('/api/token*', (req, res) => {
 	try {
 		const TokenController = require('./routes/token.js');
 		let tokenController = new TokenController(req, res);
@@ -18,7 +18,7 @@ router.all('/token*', (req, res) => {
 	}
 });
 
-router.all('/user*', (req, res) => {
+router.all('/api/user*', (req, res) => {
 	try {
 		const UserController = require('./routes/user.js');
 		let userController = new UserController(req, res);
@@ -28,10 +28,28 @@ router.all('/user*', (req, res) => {
 	
 });
 
+router.all('/api/activityType*', (req, res) => {
+	try {
+		const ActivityTypeController = require('./routes/activityType.js');
+		let activityTypeController = new ActivityTypeController(req, res);
+	} catch(err) {
+		console.log(err);
+	}
+});
+
+router.all('/api/activity/*', (req, res) => {
+	try {
+		const ActivityController = require('./routes/activity.js');
+		let activityController = new ActivityController(req, res);
+	} catch(err) {
+		console.log(err);
+	}
+});
+
 router.get('/', (req, res) => {
 	res.statusCode = 200;
-	res.setHeader('Content-Type', 'application/json');
-	res.end("Hello World !");
+	res.setHeader('Content-Type', 'application/text');
+	res.end("API runscape");
 });
 
 http.createServer((req, res) => {

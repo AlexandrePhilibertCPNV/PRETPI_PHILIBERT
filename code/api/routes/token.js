@@ -1,6 +1,6 @@
 const Router = require('router');
 
-const DatabaseManager = require('../db/databaseManager.js');
+const DatabaseManager = require('../classes/databaseManager.js');
 const dbConfig = require('../config/dbConfig.js')
 const {MissingFieldError} = require('../classes/error.js');
 
@@ -26,13 +26,13 @@ class TokenController {
 			}
 		});
 		
-		router.get('/token', (req, res) => {
+		router.get('/api/token', (req, res) => {
 			let body = '';
 			req.on('data', (data) => {
 				body += data.toString();
 				
 				// don't forget to limit data max size
-			}).on('end', () => {
+			}).on('end', () => {			
 				let post;
 				try {
 					post = JSON.parse(body);
