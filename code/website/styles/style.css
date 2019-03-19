@@ -1,13 +1,19 @@
 * {
 	margin: 0;
 	box-sizing: border-box;
+	font-family: helvetica;
+}
+
+.loginPageContainer {
+	text-align: center;
 }
 
 .loginContainer {
+	display: inline-block;
+	min-width: 350px;
+	max-width: 400px;
 	margin-top: 20vh;
 	margin-bottom: 10vh;
-	margin-left: 40vw;
-	margin-right: 40vw;
 	text-align: center;
 	border: 1px solid #629ada;
 	border-radius: 20px;
@@ -16,12 +22,29 @@
 	min-height: 450px;
 }
 
+.logoContainer {
+	min-height: 150px;
+}
+
 .logo {
-	max-width: 150px;
+	max-height: 150px;
 }
 
 .loginFormContainer {
 	width: 100%;
+}
+
+.errorContainer {
+	margin-top: 20px;
+	margin-bottom: 20px;
+}
+
+.errorMessage {
+	height: 2em;
+	color: red;
+	font-weight: bold;
+	/* white-space: pre-wrap; */
+	word-wrap: break-word;
 }
 
 form {
@@ -39,5 +62,13 @@ input {
 }
 
 input[type="submit"] {
-	margin-top: 40px;
+	cursor: pointer;
+}
+
+input:valid:focus:after {
+	border: 1px solid #629ada;
+}
+
+input:invalid:focus:after {
+	border: 1px solid red;
 }
