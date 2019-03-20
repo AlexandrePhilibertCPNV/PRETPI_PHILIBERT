@@ -1,23 +1,48 @@
 const mysql = require('mysql');
 
+const {MysqlError} = require('../classes/error.js');
 const dbConfig = require('../config/dbConfig.js');
 
 class DatabaseManager {
 	
 	constructor() {
-		
+		this.connection;
 	}
 	
 	format(query, parameters) {
 		return mysql.format(query, parameters)
 	}
 	
-	createConnection(database) {
-		return mysql.createConnection(database);
-	}
-	
 	createPool(database) {
 		return mysql.createPool(database);
+	}
+
+	connect() {
+		return new Promise((resolve, reject) => {
+			if(typeof this.connection === 'undefined') {
+				throw new MysqlError('connection undefined');
+			}
+			this.connection.connect((err) => {
+				if(err) {
+					throw new MysqlError('Could not connect to database');
+				}
+				resolve();
+			})
+		});
+	}
+	
+	query(query, values, callback) {
+		if(typeof this.connection === 'undefined') {
+			throw new MysqlError('connection undefined');
+		}
+		this.connection.query(query, values, callback);
+	}
+	
+	endConnection() {
+		if(typeof this.connection === 'undefined') {
+			throw new MysqlError('connection undefined');
+		}
+		this.connection.end();
 	}
 	
 	
@@ -31,9 +56,10 @@ class DatabaseManager {
 	*/
 	createConnection(params) {
 		if(typeof params !== 'undefined') {
-			return mysql.createConnection(params);
+			this.connection = mysql.createConnection(params);
+			return;
 		}
-		let connection = mysql.createConnection({
+		this.connection = mysql.createConnection({
 			host: 'localhost',
 			user: dbConfig.user,
 			password: dbConfig.password,
@@ -41,7 +67,6 @@ class DatabaseManager {
 			insecureAuth: true,
 			database: 'runscape'
 		});
-		return connection;
 	}
 }
 

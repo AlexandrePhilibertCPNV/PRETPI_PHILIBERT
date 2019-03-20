@@ -55,7 +55,7 @@ module.exports = {
 	 *
 	 *	@return	the JWT HS256 encoded without '=' as padding in the base64 elements
 	*/
-	createJWT: function(parameters, payload) {
+	createJWT: function(parameters) {
 		let headerObject = _createHeader();
 		let header = Buffer.from(JSON.stringify(headerObject)).toString('base64');
 		
@@ -84,7 +84,7 @@ module.exports = {
 	validateJWT: function(JWT, parameters) {
 		let receivedToken = _splitToken(JWT);
 		let receivedSignature = _sign(receivedToken.data);
-		let token = this.createJWT(parameters, receivedToken.payload);
+		let token = this.createJWT(parameters);
 		
 		if(receivedSignature === token.signature) {
 			return true;

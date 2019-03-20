@@ -1,23 +1,16 @@
+'use strict';
+
 const Router = require('router');
 
-const DatabaseManager = require('../classes/databaseManager.js');
 const activityActions = require('../actions/activity.js');
 
 class ActivityController {
 	constructor(req, res) {
 		let router = new Router();
-		let dbManager = new DatabaseManager();
-		let connection = dbManager.createConnection();
-		
-		connection.connect((err) => {
-			if(err) {
-				throw err;
-			}
-		});
 		
 		router.get('/api/activity/:id', (req, res) => {
 			let id = req.params.id;
-			activityActions.get(id, (activity) => {
+			activityActions.get(id).then((activity) => {
 				res.statusCode = 200;
 				res.setHeader('Content-Type', 'application/json');
 				res.end(JSON.stringify(activity));
@@ -36,7 +29,7 @@ class ActivityController {
 			
 			req.on('end', () => {
 				let post = JSON.parse(body);
-				activityActions.update(id, post, (state) => {
+				activityActions.update(id, post).then((state) => {
 					res.statusCode = 200;
 					res.setHeader('Content-Type', 'application/json');
 					res.end(JSON.stringify(state));
@@ -44,7 +37,7 @@ class ActivityController {
 			});		
 		}).delete('/api/activity/:id', (req, res) => {
 			let id = req.params.id;
-			activityActions.delete(id, (state) => {
+			activityActions.delete(id).then((state) => {
 				res.statusCode = 200;
 				res.setHeader('Content-Type', 'application/json');
 				res.end(JSON.stringify(state));

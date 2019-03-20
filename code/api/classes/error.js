@@ -1,24 +1,23 @@
-class MysqlError extends Error {
-	constructor(err) {
-		super(err);
-		Object.assign(this, err);
+class ApiError extends Error {
+	constructor(message) {
+		super(message)
 	}
+}
+
+class MysqlError extends Error {
+
 }
 
 class UnauthorizedError extends Error {
-	
+
 }
 
 class InvalidFormatError extends Error {
-	constructor(message) {
-		super(message);
-	}
+
 }
 
 class MissingFieldError extends Error {
-	constructor(message) {
-		super(message);
-	}
+
 }
 
 module.exports = {MysqlError, UnauthorizedError, InvalidFormatError, MissingFieldError};

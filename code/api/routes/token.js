@@ -1,74 +1,58 @@
 const Router = require('router');
 
-const DatabaseManager = require('../classes/databaseManager.js');
 const dbConfig = require('../config/dbConfig.js')
 const {MissingFieldError} = require('../classes/error.js');
-
+const ResponseManager = require('../classes/responseManager.js');
 const tokenActions = require('../actions/token.js');
+const userActions = require('../actions/user.js');
 
 class TokenController {
-	constructor(req, res) {
-		let router = new Router();
-		
-		let dbManager = new DatabaseManager();
-		let connection = dbManager.createConnection({
-			host: 'localhost',
-			user: dbConfig.user,
-			password: dbConfig.password,
-			port: 3306,
-			insecureAuth: true,
-			database: 'runscape'
-		});
-		
-		connection.connect((err) => {
-			if(err) {
-				throw err;
-			}
-		});
-		
-		router.get('/api/token', (req, res) => {
-			let body = '';
-			req.on('data', (data) => {
-				body += data.toString();
+	constructor() {
+
+	}
+	
+	run(req, res) {
+		return new Promise((resolve, reject) => {
+			let router = new Router();
+			let responseManager = new ResponseManager(res);
+			
+			router.post('/api/token', (req, res) => {
+				let body = JSON.parse(req.body);
 				
-				// don't forget to limit data max size
-			}).on('end', () => {			
-				let post;
-				try {
-					post = JSON.parse(body);
-				} catch(err) {
-					console.error(err);
+				//Field verification
+				if(typeof body.email === 'undefined') {
+					let reason = {
+						err: new MissingFieldError('Missing email in request body'),
+						responseManager: responseManager
+					};
+					reject(reason);
 				}
-				if(typeof post.email === 'undefined' || typeof post.password === 'undefined') {
-					res.statusCode = 401;
-					res.end('missing email or password in request');
+				if(typeof body.password === 'undefined') {
+					let reason = {
+						err: new MissingFieldError('Missing password in request body'),
+						responseManager: responseManager
+					};
+					reject(reason);
 				}
-				let emailCondition = {
-					email: post.email
-				};
-				let passwordCondition = {
-					password: post.password
-				};
-				connection.query('SELECT id FROM tbl_user WHERE ? AND ? LIMIT 1', [emailCondition, passwordCondition] ,(err, result) => {
-					if(err) {
-						throw err;
-					}
-					if(result.length === 0) {
-						res.statusCode = 403;
-						res.end('Login informations incorrect');
-						return;
-					}
+
+				//Authentication and JWT creation
+				userActions.login(body.email, body.password).then(result => {
 					let token = tokenActions.createJWT(result[0]);
-					res.statusCode = 200;
-					res.setHeader('Content-Type', 'application/json');
-					res.end(JSON.stringify({token: tokenActions.toString(token)}));
+					let returnedToken = {token: tokenActions.toString(token)}
+					responseManager.addData(returnedToken);
+					resolve(responseManager);
+				}).catch(err => {
+					let reason = {
+						err: err,
+						responseManager: responseManager
+					};
+					reject(reason);
 				});
 			});
 			
-		});
-		
-		router(req, res, () => {
+			router(req, res, (err) => {
 			
+			});
 		});
 	}
 }
