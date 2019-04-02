@@ -22,6 +22,45 @@
 	min-height: 450px;
 }
 
+.menuContainer {
+	width: 100%;
+}
+
+.menu {
+	width: 100%;
+	padding: 10px;
+	background-color: #c3c3c3;
+	border: 1px solid #aaa;
+	font-size: 18px;
+	color: #fff;
+}
+
+.menuLogo {
+	background-image: url("/img/logo.svg");
+	background-size: contain;
+	background-repeat: no-repeat;
+	background-origin: border-box;
+}
+
+.menuItem {
+	max-height: 40px;
+	min-height: 40px;
+	min-width: 40px;
+	padding: 10px;
+	display:inline-block;
+	vertical-align: middle;
+}
+
+.menuItemCurrent {
+	color: #56adcf;
+	font-weight: bold;
+	text-shadow: none;
+}
+
+.contentContainer {
+	width: 100%;
+}
+
 .logoContainer {
 	min-height: 150px;
 }
@@ -41,7 +80,7 @@
 
 .errorMessage {
 	height: 2em;
-	color: red;
+	color: #ea2d2d;
 	font-weight: bold;
 	/* white-space: pre-wrap; */
 	word-wrap: break-word;

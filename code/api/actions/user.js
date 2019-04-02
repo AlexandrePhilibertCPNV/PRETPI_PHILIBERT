@@ -2,7 +2,9 @@
 
 const uuidv4 = require('uuid/v4');
 const validator = require('validator');
+const crypto = require('crypto');
 
+const Util = require('../classes/util.js');
 const DatabaseManager = require('../classes/databaseManager.js');
 const {MysqlError, InvalidFormatError, MissingFieldError} = require('../classes/error.js');
 const dbConfig = require('../config/dbConfig.js');
@@ -29,6 +31,7 @@ module.exports = {
 			});
 			
 			let id = uuidv4();
+			
 			let values = {
 				'id': id,
 				'firstname': params.firstname,
@@ -36,13 +39,19 @@ module.exports = {
 				'password': params.password,
 				'email': params.email,
 				'phonenumber': params.phonenumber
-			};
+			};		
 			
 			for(let value in values) {
 				if(typeof values[value] === 'undefined') {
 					throw new InvalidFormatError('Missing value in request body');
 				}
 			}
+						
+			values.password_salt = Util.getRandomString(16);
+			let hmac = crypto.createHmac('sha256', values.password_salt); /** Hashing algorithm sha256 */
+			hmac.update(params.password);
+			values.password = hmac.digest('hex');
+				
 			
 			if(!validator.isEmail(values.email)) {
 				throw new InvalidFormatError('Email format invalid');
@@ -55,7 +64,8 @@ module.exports = {
 			dbManager.query("INSERT INTO tbl_user SET ?", values, (err, result) => {
 				dbManager.endConnection();
 				if(err) {
-					reject(err);
+					reject(new MysqlError(err.message));
+					return;
 				}
 				resolve(id);
 			});
@@ -83,7 +93,7 @@ module.exports = {
 			dbManager.query(sql, (err, result) => {
 				dbManager.endConnection();
 				if(err) {
-					reject(err);
+					reject(new Error('Could not find user'));
 				}
 				resolve(result);
 			});
@@ -116,7 +126,7 @@ module.exports = {
 				if(err) {
 					reject(err);
 				}
-				resolve(true);
+				resolve();
 			});
 		});
 	},
@@ -131,19 +141,41 @@ module.exports = {
 			dbManager.createConnection();
 			dbManager.connect().catch((err) => {
 				reject(err);
+				return;
 			});
 			
-			let sql = 'SELECT id FROM tbl_user WHERE email=? AND password=? LIMIT 1';
-			dbManager.query(sql, [email, password], (err, result) => {
-				dbManager.endConnection();
+			dbManager.query('SELECT password_salt FROM tbl_user WHERE email=?', [email], (err, result) => {
 				if(err) {
-					reject(err);
+					reject(new MysqlError(err.message));
+					return;
 				}
-				if(result.length === 0) {
+				if(typeof result === 'undefined' || typeof result[0] === 'undefined') {
 					reject(new Error('Login failed'));
+					return;
 				}
-				resolve(result);
-			});
+				let hmac = crypto.createHmac('sha256', result[0].password_salt); /** Hashing algorithm sha256 */
+				hmac.update(password);
+				let receivedHashedPassword = hmac.digest('hex');
+				
+				
+				let sql = 'SELECT id, password FROM tbl_user WHERE email=?';
+				dbManager.query(sql, [email, password], (err, result) => {
+					dbManager.endConnection();
+					if(err) {
+						reject(new MysqlError(err.message));
+						return;
+					}
+					if(result.length === 0) {
+						reject(new Error('Login failed'));
+						return;
+					}
+					if(receivedHashedPassword === result[0].password) {
+						resolve(result[0]);
+						return;
+					}
+					reject(new Error('Login failed'));
+				});
+			});			
 		});
 	}
 }

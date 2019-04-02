@@ -12,13 +12,16 @@ document.forms['loginForm'].addEventListener('submit', function(evt) {
 	
 	login(params).then(function(result) {
 		if(result.status === 200) {
-			setCookie('JWT', result.body.token, 2);
-			window.location.href = 'http://runscape.internet-box.ch/admin';
+			setCookie('token', result.body.data[0].token, 2);
+			window.location.href = 'https://runscape.internet-box.ch/admin';
 			return;
 		}
 		var errorMessageElem = document.getElementById('errorMessage');
-		errorMessage.innerText = result.body;
-	});
+		errorMessage.innerText = 'Identifiant ou mot de passe invalide';
+	}).catch(function() {
+		var errorMessageElem = document.getElementById('errorMessage');
+		errorMessage.innerText = 'Un problème est survenu avec la requête';
+	});;
 });
 
 function login(params) {

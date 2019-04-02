@@ -1,5 +1,9 @@
 const crypto = require('crypto');
 
+const Util = require('../classes/util.js');
+const DatabaseManager = require('../classes/databaseManager.js');
+const {MysqlError, InvalidFormatError, MissingFieldError} = require('../classes/error.js');
+
 function _createHeader() {
 	return {
 		typ: 'JWT',
@@ -8,8 +12,11 @@ function _createHeader() {
 }
 
 function _createPayload(parameters) {
+	if(typeof parameters.userId === 'undefined') {
+		throw new Error('Missing id parameter');
+	}
 	return {
-		userId: parameters.id
+		userId: parameters.userId
 	}
 }
 
@@ -49,6 +56,39 @@ function _sign(data) {
 }
 
 module.exports = {
+	
+	
+	
+	create: function(params) {
+		return new Promise((resolve, reject) => {
+			let dbManager = new DatabaseManager();
+			dbManager.createConnection();
+			dbManager.connect().catch((err) => {
+				reject(new MysqlError(err.message));
+			});
+			
+			//Create the timestamp until which the timestamp is valid
+			let date = new Date();
+			date.setDate(new Date().getDate() + 5);
+			
+			let token = Util.getRandomString(32);
+			let values = {
+				value: token,
+				validity_timestamp: date.toISOString(),
+				fk_user: params.userId
+			};
+			
+			dbManager.query('INSERT INTO tbl_session SET id=UUID(), ?', [values], (err, result) => {
+				if(err) {
+					reject(new MysqlError(err.message));
+					return;
+				}
+				resolve(token);
+			});
+		});
+	},
+	
+	
 	/*
 	 *	Creates a JWT based on the parameters we give it.
 	 *	The JWT '+' sign is replaced with the '-' sign to conform to the RFC 7519 standard
@@ -60,10 +100,8 @@ module.exports = {
 		let header = Buffer.from(JSON.stringify(headerObject)).toString('base64');
 		
 		//we don't want to query the database if we are just validating the JWT
-		if(typeof payload === 'undefined') {
-			let payloadObject = _createPayload(parameters);
-			payload = Buffer.from(JSON.stringify(payloadObject)).toString('base64');
-		}
+		let payloadObject = _createPayload(parameters);
+		payload = Buffer.from(JSON.stringify(payloadObject)).toString('base64');
 		
 		header = _clearBase64(header);
 		payload = _clearBase64(payload);
@@ -81,15 +119,19 @@ module.exports = {
 		return JWT.header + "." + JWT.payload + "." + JWT.signature;
 	},
 	
-	validateJWT: function(JWT, parameters) {
-		let receivedToken = _splitToken(JWT);
-		let receivedSignature = _sign(receivedToken.data);
-		let token = this.createJWT(parameters);
-		
-		if(receivedSignature === token.signature) {
-			return true;
+	validateJWT: function(JWT) {
+		try {
+			let receivedToken = _splitToken(JWT);;
+			let payload = Buffer.from(receivedToken.payload, 'base64').toString('ascii');
+			let token = this.createJWT(JSON.parse(payload));
+
+			if(receivedToken.signature === token.signature) {
+				return true;
+			}
+			return false;
+		} catch(err) {
+			console.error(err);
 		}
 		
-		return false;
 	}
 }

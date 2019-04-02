@@ -35,12 +35,16 @@ class TokenController {
 					reject(reason);
 				}
 
-				//Authentication and JWT creation
-				userActions.login(body.email, body.password).then(result => {
-					let token = tokenActions.createJWT(result[0]);
-					let returnedToken = {token: tokenActions.toString(token)}
-					responseManager.addData(returnedToken);
-					resolve(responseManager);
+				//Authentication and token creation
+				userActions.login(body.email, body.password).then(user => {
+					// JWT token
+					// let token = tokenActions.createJWT({userId: user.id});
+					// let returnedToken = {token: tokenActions.toString(token)}
+					// Basic token
+					tokenActions.create({userId: user.id}).then(token => {
+						responseManager.addData({token: token});
+						resolve(responseManager);
+					});
 				}).catch(err => {
 					let reason = {
 						err: err,

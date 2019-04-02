@@ -4,19 +4,19 @@ class ApiError extends Error {
 	}
 }
 
-class MysqlError extends Error {
+class MysqlError extends ApiError {
 
 }
 
-class UnauthorizedError extends Error {
+class UnauthorizedError extends ApiError {
 
 }
 
-class InvalidFormatError extends Error {
+class InvalidFormatError extends ApiError {
 
 }
 
-class MissingFieldError extends Error {
+class MissingFieldError extends ApiError {
 
 }
 

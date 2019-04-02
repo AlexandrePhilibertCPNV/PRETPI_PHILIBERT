@@ -2,43 +2,67 @@ const Router = require('router');
 const uuidv4 = require('uuid/v4');
 
 const activityActions = require('../actions/activity.js');
+const ResponseManager = require('../classes/responseManager.js');
 
 class ActivityTypeController {
 	constructor(req, res) {
-		let router = new Router();
-		
-		router.get('/api/activityType', (req, res) => {
-			activityActions.getTypes().then((types) => {
-				res.statusCode = 200;
-				res.setHeader('Content-Type', 'application/json');
-				res.end(JSON.stringify(types));
-			});
-		});
-		
-		router.post('/api/activityType', (req, res) => {	
-			let body = '';
-			req.on('data', (data) => {
-				body += data.toString();
-				
-				//~ 2Mb 
-				if (body.length > 2e6) {
-					req.connection.destroy();
-				}
-			});
+
+	}
+	
+	run(req, res) {
+		return new Promise((resolve, reject) => {
+			let router = new Router();
+			let responseManager = new ResponseManager(res);
 			
-			req.on('end', () => {
-				let post = JSON.parse(body);
-				activityActions.createType(post).then((id) => {
-					res.statusCode = 200;
-					res.setHeader('Content-Type', 'application/json');
-					res.end(JSON.stringify(id));
+			router.get('/api/activity-type', (req, res) => {
+				activityActions.getTypes().then(types => {
+					responseManager.setData(types);
+					resolve(responseManager);
+				}).catch(err => {
+					let reason = {
+						err: err,
+						responseManager: responseManager
+					};
+					reject(reason);
 				});
 			});
+			
+			router.get('/api/activity-type/:activityTypeId', (req, res) => {
+				let activityTypeId = req.params.activityTypeId;
+				
+				activityActions.getTypes(activityTypeId).then(types => {
+					responseManager.setData(types);
+					resolve(responseManager);
+				}).catch(err => {
+					let reason = {
+						err: err,
+						responseManager: responseManager
+					};
+					reject(reason);
+				});
+			});
+			
+			router.post('/api/activity-type', (req, res) => {	
+				let body = JSON.parse(req.body);
+
+				activityActions.createType(body).then(id => {
+					// return the Id of the created activityType
+					responseManager.addData({id});
+					resolve(responseManager);
+				}).catch(err => {
+					let reason = {
+						err: err,
+						responseManager
+					};
+					reject(reason);
+				});
+			});
+			
+			router(req, res, () => {
+				
+			});
 		});
 		
-		router(req, res, () => {
-			
-		});
 	}
 }
 

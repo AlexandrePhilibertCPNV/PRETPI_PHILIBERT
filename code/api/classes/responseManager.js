@@ -1,6 +1,6 @@
 'use strict';
 
-const {MissingFieldError} = require('../classes/error.js');
+const {MissingFieldError, InvalidFormatError} = require('../classes/error.js');
 
 /*
  *	This class controls the structure of data returned to the user and it's behavior
@@ -59,9 +59,6 @@ class ResponseManager {
 		if(typeof body !== 'undefined') {
 			res.end(body);
 			return;
-		}
-		if(this.responseBody.data.length === 0 && Object.entries(this.responseBody.error).length === 0) {
-			throw new MissingFieldError('Response body needs data or error attribute');
 		}
 		let response = JSON.stringify(this.responseBody);
 		this.res.end(response);
