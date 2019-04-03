@@ -1,5 +1,10 @@
 'use strict';
 
+/**
+ *  @file user.js
+ *  @brief handle the user actions (create, get, update...)
+ */
+
 const uuidv4 = require('uuid/v4');
 const validator = require('validator');
 const crypto = require('crypto');
@@ -18,10 +23,13 @@ const FIELD_ALLOWED_MODIFICATION = [
 
 module.exports = {
 	
-	/*
-	 *	@params		contains the user informations (email, password, firstname, etc..)
-	 *	@callback	returns the user id when the user was inserted in db
-	*/
+	/**
+	 *  @brief insert a user in the database
+	 *  
+	 *  @param params contains the user informations (email, password, firstname, etc..)
+	 *  
+	 *  @return returns the user id when the user was inserted in db
+	 */
 	create: function(params) {
 		return new Promise((resolve, reject) => {
 			let dbManager = new DatabaseManager();	
@@ -72,12 +80,13 @@ module.exports = {
 		});
 	},
 	
-	
-	/*
-	 *	@id	(optional)	id of the user we want to select
-	 *
-	 *	@return			promise which contain the SQL query result
-	*/
+	/**
+	 *  @brief get a single user or multiple user
+	 *  
+	 *  @param id (optional)	id of the user we want to select
+	 *  
+	 *  @return promise which contain the SQL query result
+	 */
 	get: function(id) {
 		return new Promise((resolve, reject) => {
 			let dbManager = new DatabaseManager();	
@@ -100,11 +109,14 @@ module.exports = {
 		});
 	},
 	
-	/*
-	 *	@id		UUID of the user we want to update
-	 *	@params	contains the fields and value that should be changed
-	 *
-	*/
+	/**
+	 *  @brief Update allowed fields present in tbl_user
+	 *  
+	 *  @param id     UUID of the user we want to update
+	 *  @param params contains the fields and value that should be changed
+	 *  
+	 *  @return promise that resolves if success, fails otherwise
+	 */
 	update: function(id, params) {
 		return new Promise((resolve, reject) => {
 			let dbManager = new DatabaseManager();
@@ -121,6 +133,20 @@ module.exports = {
 				}
 			}
 			
+			//reject if no values are present
+			if(!Array.isArray(values) || values.length === 0) {
+				reject(new MissingFieldError('No fields where given or fields are not allowed modification'));
+				return;
+			}
+			
+			//if password param is set, create new salt and hash
+			if(values.password) {
+				values.password_salt = Util.getRandomString(16);
+				let hmac = crypto.createHmac('sha256', values.password_salt); /** Hashing algorithm sha256 */
+				hmac.update(params.password);
+				values.password = hmac.digest('hex');
+			}
+			
 			dbManager.query("UPDATE tbl_user SET ? WHERE id=?",[values, id], (err, result) => {
 				dbManager.endConnection();
 				if(err) {
@@ -134,14 +160,13 @@ module.exports = {
 	login: function(email, password) {
 		return new Promise((resolve, reject) => {
 			if(typeof email === 'undefined' || typeof password === 'undefined') {
-				throw new MissingFieldError('Missing email or password');
+				reject(new MissingFieldError('Missing email or password'))
 			} 
 			
 			let dbManager = new DatabaseManager();
 			dbManager.createConnection();
 			dbManager.connect().catch((err) => {
 				reject(err);
-				return;
 			});
 			
 			dbManager.query('SELECT password_salt FROM tbl_user WHERE email=?', [email], (err, result) => {

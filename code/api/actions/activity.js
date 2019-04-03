@@ -92,6 +92,11 @@ module.exports = {
 			
 			this.parseGpx(params.gpx).then((parsedGpx) => {
 				
+				if(typeof parsedGpx === 'undefined') {
+					reject(new MissingFieldError('fields are missing'));
+					return;
+				}
+				
 				let waypoints = parsedGpx.tracks[0].segments[0];
 				let startTimestamp = new Date(waypoints[0].time);
 				let endTimestamp = new Date(waypoints[waypoints.length-1].time);
@@ -114,10 +119,6 @@ module.exports = {
 					}
 					
 					this.addPositions(activityId, waypoints);
-					
-					// for(let index = 0; index < waypoints.length; index++) {
-						// this.addPosition(activityId, waypoints[index]);
-					// }
 					
 					let totalDistanceKm =  _computeTotalDistance(waypoints);
 					let startTimeSeconds = startTimestamp.getTime() / 1000;
@@ -154,7 +155,7 @@ module.exports = {
 			let dbManager = new DatabaseManager();
 			dbManager.createConnection();
 			dbManager.connect().catch((err) => {
-				throw err;
+				reject(err);
 			});
 			
 			//Fields we return to the user

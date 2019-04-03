@@ -1,9 +1,22 @@
+'use strict';
+
+/**
+ *  @file token.js
+ *  @brief Handle the JWT actions
+ */
+
 const crypto = require('crypto');
 
 const Util = require('../classes/util.js');
 const DatabaseManager = require('../classes/databaseManager.js');
 const {MysqlError, InvalidFormatError, MissingFieldError} = require('../classes/error.js');
 
+
+/**
+ *  @brief Create the header of the JWT
+ *  
+ *  @return header object
+ */
 function _createHeader() {
 	return {
 		typ: 'JWT',
@@ -11,6 +24,12 @@ function _createHeader() {
 	}
 }
 
+/**
+ *  @brief create the payload of the JWT
+ *  
+ *  @param parameters object containing userId attribute
+ *  @return payload object
+ */
 function _createPayload(parameters) {
 	if(typeof parameters.userId === 'undefined') {
 		throw new Error('Missing id parameter');
@@ -20,6 +39,12 @@ function _createPayload(parameters) {
 	}
 }
 
+/**
+ *  @brief parse a JWT and return an object containing all JWT parts (header, payload, data, signature)
+ *  
+ *  @param token JWT in string format
+ *  @return payload object
+ */
 function _splitToken(token) {
 	let elem = token.split('.');
 	if(elem.length < 3) {
@@ -33,12 +58,24 @@ function _splitToken(token) {
 	}
 }
 
+/**
+ *  @brief Clear the base64 string given as paremeter to conform to RFC 7519 standard
+ *  
+ *  @param string base64 string
+ *  @return string conform to RFC 7519
+ */
 function _clearBase64(string) {
 	string = string.replace(/=/g, '');
 	string = string.replace(/\+/g, '-');
 	return string;
 }
 
+/**
+ *  @brief create the signature part of the JWT
+ *  
+ *  @param data contains the data part of the JWT in string format
+ *  @return signature in string format
+ */
 function _sign(data) {
 	if(data.includes('=') || data.includes('+')) {
 		data = _clearBase64(data);
@@ -56,8 +93,6 @@ function _sign(data) {
 }
 
 module.exports = {
-	
-	
 	
 	create: function(params) {
 		return new Promise((resolve, reject) => {
@@ -88,13 +123,13 @@ module.exports = {
 		});
 	},
 	
-	
-	/*
-	 *	Creates a JWT based on the parameters we give it.
-	 *	The JWT '+' sign is replaced with the '-' sign to conform to the RFC 7519 standard
-	 *
-	 *	@return	the JWT HS256 encoded without '=' as padding in the base64 elements
-	*/
+	/**
+	 *  @brief Creates a JWT based on the parameters we give it. The JWT '+' sign is replaced with the '-' sign to conform to the RFC 7519 standard
+	 *  
+	 *  @param parameters Description for parameters
+	 *  
+	 *  @return the JWT HS256 encoded without '=' as padding in the base64 elements
+	 */
 	createJWT: function(parameters) {
 		let headerObject = _createHeader();
 		let header = Buffer.from(JSON.stringify(headerObject)).toString('base64');
@@ -119,19 +154,21 @@ module.exports = {
 		return JWT.header + "." + JWT.payload + "." + JWT.signature;
 	},
 	
+	/**
+	 *  @brief Validates the JWT by checking if the signature of the data is equal to the signature on the JWT
+	 *  
+	 *  @param JWT token to validate
+	 *  
+	 *  @return Return true if validated, false if not
+	 */
 	validateJWT: function(JWT) {
-		try {
-			let receivedToken = _splitToken(JWT);;
-			let payload = Buffer.from(receivedToken.payload, 'base64').toString('ascii');
-			let token = this.createJWT(JSON.parse(payload));
+		let receivedToken = _splitToken(JWT);
+		let payload = Buffer.from(receivedToken.payload, 'base64').toString('ascii');
+		let token = this.createJWT(JSON.parse(payload));
 
-			if(receivedToken.signature === token.signature) {
-				return true;
-			}
-			return false;
-		} catch(err) {
-			console.error(err);
+		if(receivedToken.signature === token.signature) {
+			return true;
 		}
-		
+		return false;
 	}
 }

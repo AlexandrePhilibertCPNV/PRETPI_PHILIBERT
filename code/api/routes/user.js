@@ -1,3 +1,10 @@
+'use strict';
+
+/**
+ *  @file user.js
+ *  @brief Controller that handle user actions depending on the endpoint 
+ */
+
 const querystring = require('querystring');
 const Router = require('router');
 const uuidv4 = require('uuid/v4');
@@ -7,6 +14,7 @@ const {MysqlError, InvalidFormatError, UnauthorizedError} = require('../classes/
 const userActions = require('../actions/user.js');
 const tokenActions = require('../actions/token.js');
 const activityActions = require('../actions/activity.js');
+const AuthManager = require('../classes/authManager.js');
 
 class UserController {
 	constructor() {
@@ -65,21 +73,33 @@ class UserController {
 				let body = JSON.parse(req.body);
 				body.userId = req.params.id;
 				
-				/* activityActions.get({userId: userId}).then(activities => {
-					if(activites.length >= 10) {
-						throw new UnauthorizedError('Cannot create more than 10 activities, subscribe to create more');
-					}
-				}).catch(err => {
-					let reason = {
-						err: err,
-						responseManager: responseManager
-					};
-					reject(reason);
-				}); */
-
-				activityActions.create(body).then(activityId => {
-					responseManager.addData(activityId);
-					responseManager.end();
+				let token = AuthManager.parseBearer(req.headers['authorization']);
+				AuthManager.validateUserSession(token, userId).then(() => {
+					activityActions.get({userId: body.userId}).then(activities => {
+						if(activities.length >= 10) {
+							let reason = {
+								err: new UnauthorizedError('Cannot create more than 10 activities, subscribe to create more'),
+								responseManager: responseManager
+							};
+							reject(reason);
+						}
+						activityActions.create(body).then(activityId => {
+							responseManager.addData(activityId);
+							responseManager.end();
+						}).catch(err => {
+							let reason = {
+								err: err,
+								responseManager: responseManager
+							};
+							reject(reason);
+						});
+					}).catch(err => {
+						let reason = {
+							err: err,
+							responseManager: responseManager
+						};
+						reject(reason);
+					});
 				}).catch(err => {
 					let reason = {
 						err: err,
@@ -87,28 +107,25 @@ class UserController {
 					};
 					reject(reason);
 				});
-	
 			
 			});
 			
 			router.put('/api/user/:id', (req, res) => {
-				try {
-					let token = tokenActions.parseBearer(req.headers['authorization']);
-					if(!tokenActions.validateJWT(token)) {
-						throw new UnauthorizedError('Could not validate JWT');
-					}
-				} catch(err) {
-					let reason = {
-						err: err,
-						responseManager: responseManager
-					};
-					reject(reason);
-				}
-				let userId = req.params.id;				
-				let body = JSON.parse(req.body);
-				userActions.update(userId, body).then(() => {
-					responseManager.addData({succeded: true});
-					resolve(responseManager);
+				
+				let userId = req.params.id;
+				let token = AuthManager.parseBearer(req.headers['authorization']);
+				AuthManager.validateUserSession(token, userId).then(() => {
+					let body = JSON.parse(req.body);
+					userActions.update(userId, body).then(() => {
+						responseManager.addData({succeded: true});
+						resolve(responseManager);
+					}).catch(err => {
+						let reason = {
+							err: err,
+							responseManager: responseManager
+						};
+						reject(reason);
+					});
 				}).catch(err => {
 					let reason = {
 						err: err,
@@ -133,7 +150,13 @@ class UserController {
 			});
 
 			router(req, res, (err) => {
-				
+				if(err) {
+					let reason = {
+						err: err,
+						responseManager: responseManager
+					};
+					reject(reason);
+				}
 			});			
 		});
 	}

@@ -1,3 +1,8 @@
+/**
+ *  @file error.js
+ *  @brief Definition of all error types 
+ */
+
 class ApiError extends Error {
 	constructor(message) {
 		super(message)

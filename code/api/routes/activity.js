@@ -1,5 +1,10 @@
 'use strict';
 
+/**
+ *  @file activity.js
+ *  @brief Controller that handle activity actions depending on the endpoint 
+ */
+
 const Router = require('router');
 
 const ResponseManager = require('../classes/responseManager.js');
@@ -7,9 +12,6 @@ const AuthManager = require('../classes/authManager.js');
 const activityActions = require('../actions/activity.js');
 const {MissingFieldError, MysqlError, InvalidFormatError, UnauthorizedError} = require('../classes/error.js');
 
-/*
- *	Controller that handle activity actions depending on the endpoint 
-*/
 class ActivityController {
 	constructor() {
 		

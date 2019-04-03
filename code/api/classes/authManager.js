@@ -1,18 +1,31 @@
 'use strict';
 
+/**
+ *  @file authManager.js
+ *  @brief Class that handles user sessions
+ */
+
 const DatabaseManager = require('./databaseManager.js');
-const {MissingFieldError, MysqlError, InvalidFormatError} = require('./error.js');
+const {MissingFieldError, MysqlError, InvalidFormatError, UnauthorizedError} = require('./error.js');
 
 var AuthManager = {};
 
+/**
+ *  @brief Validate the user session by matching the token with the userId and validating the timestamp
+ *  
+ *  @param token  session token in string format
+ *  @param userId Id of user in string format
+ *  
+ *  @return promise that resolves if session is valid, rejects if not
+ */
 AuthManager.validateUserSession = function(token, userId) {
 	return new Promise((resolve, reject) => {
 		AuthManager.getUserSession(token, userId).then(session => {
-			if(AuthManager.checkSessionValidity(session.validity_timestamp)) {
+			if(AuthManager.isTimestampValid(session.validity_timestamp)) {
 				resolve();
 				return;
 			}
-			reject();
+			reject(new UnauthorizedError('Session no longer valid'));
 		}).catch(err => {
 			reject(err);
 			return;
@@ -20,19 +33,26 @@ AuthManager.validateUserSession = function(token, userId) {
 	});
 }
 
-/*
- *	Static method that retreives to which user the token belongs
-*/
+
+/**
+ *  @brief Static method that retreives to which user the token belongs
+ *  
+ *  @param token  session token in string format
+ *  @param userId Id of user in string format
+ *  
+ *  @return promise that resolves if session is found in database, rejects if not
+ */
 AuthManager.getUserSession = function(token, userId) {
 	return new Promise((resolve, reject) => {
 		if(typeof token === 'undefined') {
-			throw new MissingFieldError('Missing token field');
+			reject(new MissingFieldError('Missing token field'));
+			return;
 		}
 		
 		let dbManager = new DatabaseManager();
 		dbManager.createConnection();
 		dbManager.connect().catch((err) => {
-			throw err;
+			reject(err);
 		});
 		
 		dbManager.query('SELECT * FROM tbl_session WHERE value=? AND fk_user=?', [token, userId], (err, result) => {
@@ -50,9 +70,16 @@ AuthManager.getUserSession = function(token, userId) {
 	});	
 }
 
-AuthManager.checkSessionValidity = function(validity) {
+/**
+ *  @brief Check if the timestamp is still valid
+ *  
+ *  @param validity timestamp in string format (ex: 2018-12-29T11:55:38.000Z)
+ *  
+ *  @return true if valid, false if not
+ */
+AuthManager.isTimestampValid = function(validity) {
 	if(typeof validity === 'undefined') {
-		throw new MissingFieldError('Missing session validity attribute');
+		throw new MissingFieldError('Missing validity attribute');
 	}
 	
 	let tokenValidity = new Date(validity).getTime();
@@ -63,13 +90,14 @@ AuthManager.checkSessionValidity = function(validity) {
 	}
 	return true;
 }
-
-
-	/*
-	 *	@bearer	token we want to parse
-	 *
-	 *	@return	only the token part without 'Bearer ' in front
-	*/
+	
+/**
+ *  @brief parse of the bearer token
+ *  
+ *  @param bearer token we want to parse
+ *  
+ *  @return only the token part without 'Bearer ' in front
+ */
 AuthManager.parseBearer = function(bearer) {
 	if(typeof bearer === 'undefined') {
 		throw new MissingFieldError('Missing bearer parameter');

@@ -16,6 +16,9 @@ const UserController = require('./api/routes/user.js');
 const ActivityController = require('./api/routes/activity.js');
 const ActivityTypeController = require('./api/routes/activityType.js');
 
+const HTTP_ENABLED = false;
+const HTTPS_ENABLED = true;
+
 let tokenController = new TokenController();
 let userController = new UserController();
 let activityController = new ActivityController();
@@ -177,7 +180,9 @@ let onServerRequest = (req, res) => {
 	});
 };
 
-http.createServer(onServerRequest).listen(80);
+if (!HTTP_ENABLED) {
+	http.createServer(onServerRequest).listen(80);
+}
 
 /*
  *	Tries to read SSL certificate if present
@@ -191,7 +196,9 @@ try {
 	console.error("Could not find SSL certificate files, server running under HTTP only");
 }
 
-https.createServer(options, onServerRequest).listen(443);
+if (HTTPS_ENABLED) {
+	https.createServer(options, onServerRequest).listen(443);
+}
 
 //Catch all uncaught exceptions and prevent the server from crashing
 process.on('uncaughtException', err => {
